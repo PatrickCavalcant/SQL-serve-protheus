@@ -1,14 +1,18 @@
 # SQL-Serve
+[![author](https://img.shields.io/badge/author-patrick-red.svg)](https://www.linkedin.com/in/patrick-cavalcante-moraes-a95635179/) 
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/PatrickCavalcant)
+
 Cláusulas desenvolvidas para utilização como exemplos no dia a dia.
+
 Funções APSDU
 ---
-Pack = exclui fisicamente os registros marcados como deletado;
-zap = exclui fisicamente todos os registros da tabela, indiferente de estarem ou não marcados como deletados;
-recall = "reativa" os registros marcados como deletados;
-replace = substitui o conteudo atual de um campo , por um novo conteudo informado;
-set deleted = ativa/desativa a visulização dos registros marcados como deletados;
-set softseek = ativa/desativa a pesquisa relativa em um banco de dados indexado. 
-Contar = conta quantos registros tem na tabela
+Pack = exclui fisicamente os registros marcados como deletado;</br>
+zap = exclui fisicamente todos os registros da tabela, indiferente de estarem ou não marcados como deletados;</br>
+recall = "reativa" os registros marcados como deletados;</br>
+replace = substitui o conteudo atual de um campo , por um novo conteudo informado;</br>
+set deleted = ativa/desativa a visulização dos registros marcados como deletados;</br>
+set softseek = ativa/desativa a pesquisa relativa em um banco de dados indexado; </br>
+Contar = conta quantos registros tem na tabela.</br>
 
 sp_helpindex 'VO6010'  
 
@@ -50,28 +54,28 @@ SELECT B1_DTREFP1, * FROM SB1010
 ```
 Tabelas Protheus
 ```
-VS1, Orçamentos
-VO1, O.S
-VO2 , O.S Requisição Cabeçalho
-VO3, O.S  Requisição Peça
-VO4, O.S Requisição Serviço
-SA1, Clientes
-SA2, Fornecedores
-SB1, Produtos
-SB2, Saldo atual
-SB9, Saldo Inicial
-SBZ, Indicadores de Produtos
-SE1, Contas a receber
-SE2, Contas a Pagar
-VV1, Chassis
-SLF, Usuário Caixa
-VOE, Escala Automática Produtivos
+VS1010 - Orçamentos
+VO1010 - O.S
+VO2010 - O.S Requisição Cabeçalho
+VO3010 - O.S  Requisição Peça
+VO4010 - O.S Requisição Serviço
+SA1010 - Clientes
+SA2010 - Fornecedores
+SB1010 - Produtos
+SB2010 - Saldo atual
+SB9010 - Saldo Inicial
+SBZ010 - Indicadores de Produtos
+SE1010 - Contas a receber
+SE2010 - Contas a Pagar
+VV1010 - Chassis
+SLF010 - Usuário Caixa
+VOE010 - Escala Automática Produtivos
 XXE010 -  Tabela de Log, importaçao de registros
-SX5, Tabela genérica
+SX5010 - Tabela genérica
 	Tabela 1 -  Controle de numeração da nota fiscal
-SD9 , Controle de numeração da nota fiscal
-SF2, Cabeçalho das NF de Saída - https://terminaldeinformacao.com/wp-content/tabelas/sf2.php
-SD2, Campo da NF de Saída
+SD9010 - Controle de numeração da nota fiscal
+SF2010 - Cabeçalho das NF de Saída - https://terminaldeinformacao.com/wp-content/tabelas/sf2.php
+SD2010 - Campo da NF de Saída
 SF1010 - Nota de Entrada/Devolução
 CTH010 - Classes de Valores
 SX7010 -  Parâmetros
@@ -83,6 +87,8 @@ SED010 - Naturezas Financeira
 SF4010 - TES
 VE9010 - Lista de Substituição
 SX3010 - Campos das tabelas
+VOO010 - Relacionamento de OS/NF
+SYS_COMPANY_CFG e SYS_COMPANY - Tabela de Filiais
 ```
 Descriptografar Usuário
 ```
@@ -181,3 +187,61 @@ UPDATE SA1010
 SET A1_NREDUZ = SUBSTRING(A1_NOME, 1, 20) 
 WHERE R_E_C_N_O_ = 20
 ```
+Campo MEMO
+```
+SELECT
+ISNULL(CAST(CAST(VOO_OBSENS AS VARBINARY(8000)) AS VARCHAR(8000)),'') AS OBS, 
+VOO_NUMNFI,
+* FROM VOO010 WHERE VOO_OBSENS <> 'NULL'
+AND VOO_FILIAL = '010113'
+```
+Select entre duas tabela
+```
+BEGIN TRAN
+
+UPDATE SD2
+SET D2_LOJA = F2_LOJA
+--SELECT DISTINCT F2_DOC, F2_CLIENTE, F2_LOJA, D2_DOC, D2_CLIENTE, D2_LOJA, F2_EMISSAO
+FROM SF2010 AS SF2 
+INNER JOIN SD2010 AS SD2 ON F2_DOC = D2_DOC AND F2_CLIENT = D2_CLIENTE AND F2_FILIAL = D2_FILIAL
+WHERE F2_LOJA <> D2_LOJA AND SD2.D_E_L_E_T_ = '' AND SF2.D_E_L_E_T_ = ''
+--ORDER BY F2_DOC
+
+COMMIT
+```
+
+Subselect
+```
+SELECT DISTINCT 
+(SELECT SUM(C7_TOTAL) FROM SC7010 AS SC7  
+INNER JOIN SCR010 AS SCR ON C7_NUM = CR_NUM AND C7_FILIAL = CR_FILIAL  
+WHERE SC7.C7_NUM = '001869'  AND SCR.D_E_L_E_T_ <> '*' AND SC7.D_E_L_E_T_ <> '*' AND SCR.CR_STATUS = '02') AS VTOTALPEDIDO, 
+CONCAT(CR_FILIAL,' - ',M0_FILIAL) AS FILIAL, 
+CR_NUM AS PEDIDO,  
+CR_TIPO AS TIPO,  
+C7_PRODUTO AS PRODUTO,  
+C7_DESCRI AS DESCRICAO, 
+C7_FORNECE AS FORNECEDOR, 
+C7_LOJA AS LOJA,  
+A2_NOME AS NOMEFORNEC, 
+C7_FILENT AS ENTREGA,  
+C7_QUANT AS QUANTIDADE,  
+C7_PRECO AS PRECO, 
+C7_TOTAL AS TOTAL,  
+C7_CC AS CCCOD, 
+CTT_DESC01 AS CCDESC 
+FROM SCR010 AS SCR  
+INNER JOIN SC7010 AS SC7 ON C7_NUM = CR_NUM AND C7_FILIAL = CR_FILIAL  
+INNER JOIN CTT010 AS CTT ON CTT_CUSTO = C7_CC  
+INNER JOIN SA2010 AS SA2 ON C7_FORNECE = A2_COD AND C7_LOJA = A2_LOJA  
+INNER JOIN SYS_COMPANY AS FIL ON CR_FILIAL = M0_CODFIL 
+WHERE SCR.D_E_L_E_T_ <> '*' AND SC7.D_E_L_E_T_ <> '*' AND SCR.CR_STATUS = '02' AND FIL.D_E_L_E_T_ <> '*' AND CR_NUM = '001869' ORDER BY CR_NUM --'"+pedido+"'
+```
+
+Concatenar colunas no tamanho igual a 2
+```
+SELECT CONCAT(CAST(XX8_EMPR AS VARCHAR(2)),CAST(XX8_UNID AS VARCHAR(2)),CAST (XX8_CODIGO AS VARCHAR(2))) AS FILIAL   
+FROM SYS_COMPANY_CFG AS FIL 
+WHERE D_E_L_E_T_ <> '*' AND XX8_EMPR = '01' AND XX8_UNID = '01'
+```
+
